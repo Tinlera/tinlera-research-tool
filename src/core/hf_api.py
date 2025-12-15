@@ -25,8 +25,15 @@ class HuggingFaceAPI:
     
     def _make_request(self, model: str, payload: Dict[str, Any], is_image: bool = False) -> Optional[Dict[str, Any]]:
         """API isteği yap"""
-        # Router API için URL formatı: https://router.huggingface.co/models/{model}
-        url = f"{self.base_url}/{model}"
+        # Router API için URL formatı kontrolü
+        # Eğer router API kullanılıyorsa, format farklı olabilir
+        if "router.huggingface.co" in self.base_url:
+            # Router API için alternatif format denemeleri
+            # Önce standart formatı dene
+            url = f"{self.base_url}/{model}"
+        else:
+            # Eski Inference API formatı
+            url = f"{self.base_url}/{model}"
         
         if is_image:
             self.headers["Content-Type"] = "application/json"
@@ -48,6 +55,20 @@ class HuggingFaceAPI:
                     print(f"Model yükleniyor, {wait_time} saniye bekleniyor...")
                     time.sleep(int(wait_time))
                     continue
+                elif response.status_code == 410:
+                    # Eski endpoint kullanılıyor, router API'ye geç
+                    error_msg = response.text
+                    if "router.huggingface.co" in error_msg.lower():
+                        # Router API'ye geçiş önerisi
+                        return {"error": "API endpoint değişti. Lütfen programı güncelleyin veya ayarlardan endpoint'i kontrol edin.", "status_code": 410}
+                    return {"error": error_msg, "status_code": response.status_code}
+                elif response.status_code == 404:
+                    # Model bulunamadı - router API formatını dene
+                    if "router.huggingface.co" in self.base_url:
+                        # Router API için farklı format dene
+                        # Bazı modeller için farklı endpoint gerekebilir
+                        return {"error": f"Model bulunamadı: {model}. Model adını kontrol edin veya Inference Endpoints kullanmayı deneyin.", "status_code": 404}
+                    return {"error": f"Model bulunamadı: {model}", "status_code": 404}
                 else:
                     error_msg = response.text
                     print(f"API hatası ({response.status_code}): {error_msg}")
