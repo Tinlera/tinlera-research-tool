@@ -22,6 +22,14 @@ class HuggingFaceAPI:
             "Authorization": f"Bearer {token}",
             "Content-Type": "application/json"
         }
+        # HuggingFace Hub InferenceClient kullan (daha güncel)
+        if HF_HUB_AVAILABLE and token:
+            try:
+                self.inference_client = InferenceClient(token=token, timeout=timeout)
+            except Exception:
+                self.inference_client = None
+        else:
+            self.inference_client = None
     
     def _make_request(self, model: str, payload: Dict[str, Any], is_image: bool = False) -> Optional[Dict[str, Any]]:
         """API isteği yap"""
@@ -101,6 +109,26 @@ class HuggingFaceAPI:
         if not self.token:
             return {"error": "HuggingFace token gerekli"}
         
+        # Önce InferenceClient ile dene (daha güncel)
+        if self.inference_client:
+            try:
+                if parameters:
+                    result = self.inference_client.text_generation(
+                        prompt,
+                        model=model,
+                        max_new_tokens=parameters.get("max_new_tokens", 250),
+                        temperature=parameters.get("temperature", 0.7),
+                        top_p=parameters.get("top_p", 0.95),
+                    )
+                else:
+                    result = self.inference_client.text_generation(prompt, model=model)
+                
+                return {"generated_text": result}
+            except Exception as e:
+                # InferenceClient başarısız olursa eski yönteme dön
+                print(f"InferenceClient hatası, eski API deneniyor: {e}")
+        
+        # Eski API yöntemi
         payload = {
             "inputs": prompt,
         }
