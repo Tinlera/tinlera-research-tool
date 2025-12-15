@@ -191,7 +191,32 @@ class HuggingFaceAPI:
     
     def chat_completion(self, model: str, messages: List[Dict[str, str]], parameters: Optional[Dict] = None) -> Optional[Dict[str, Any]]:
         """Chat completion formatında istek"""
-        # Chat formatını düz metne çevir
+        if not self.token:
+            return {"error": "HuggingFace token gerekli"}
+        
+        # Önce InferenceClient ile chat_completion dene
+        if self.inference_client:
+            try:
+                result = self.inference_client.chat_completion(
+                    messages=messages,
+                    model=model,
+                    max_tokens=parameters.get("max_new_tokens", 250) if parameters else 250,
+                    temperature=parameters.get("temperature", 0.7) if parameters else 0.7,
+                )
+                # Chat completion response formatını düzelt
+                if isinstance(result, dict):
+                    if "choices" in result and len(result["choices"]) > 0:
+                        generated_text = result["choices"][0].get("message", {}).get("content", "")
+                        return {"generated_text": generated_text}
+                    elif "generated_text" in result:
+                        return result
+                    elif "text" in result:
+                        return {"generated_text": result["text"]}
+                return {"generated_text": str(result)}
+            except Exception as e:
+                print(f"InferenceClient chat_completion hatası, fallback deneniyor: {e}")
+        
+        # Fallback: Chat formatını düz metne çevir
         prompt = ""
         for msg in messages:
             role = msg.get("role", "user")
