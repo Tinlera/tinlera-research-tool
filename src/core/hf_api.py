@@ -118,6 +118,7 @@ class HuggingFaceAPI:
         # Önce InferenceClient ile dene (daha güncel)
         if self.inference_client:
             try:
+                # Önce text_generation ile dene
                 if parameters:
                     result = self.inference_client.text_generation(
                         prompt,
@@ -131,8 +132,31 @@ class HuggingFaceAPI:
                 
                 return {"generated_text": result}
             except Exception as e:
-                # InferenceClient başarısız olursa eski yönteme dön
-                print(f"InferenceClient hatası, eski API deneniyor: {e}")
+                error_str = str(e)
+                # Eğer "conversational" task destekleniyorsa, chat completion kullan
+                if "conversational" in error_str.lower() or "not supported for task text-generation" in error_str:
+                    try:
+                        # Chat completion formatında dene
+                        messages = [{"role": "user", "content": prompt}]
+                        result = self.inference_client.chat_completion(
+                            messages=messages,
+                            model=model,
+                            max_tokens=parameters.get("max_new_tokens", 250) if parameters else 250,
+                            temperature=parameters.get("temperature", 0.7) if parameters else 0.7,
+                        )
+                        # Chat completion response formatını düzelt
+                        if isinstance(result, dict) and "choices" in result:
+                            generated_text = result["choices"][0].get("message", {}).get("content", "")
+                            return {"generated_text": generated_text}
+                        elif isinstance(result, dict) and "generated_text" in result:
+                            return result
+                        else:
+                            return {"generated_text": str(result)}
+                    except Exception as e2:
+                        print(f"InferenceClient chat_completion hatası, eski API deneniyor: {e2}")
+                else:
+                    # InferenceClient başarısız olursa eski yönteme dön
+                    print(f"InferenceClient hatası, eski API deneniyor: {e}")
         
         # Eski API yöntemi
         payload = {
