@@ -37,7 +37,7 @@ SUPPORTED_FILE_EXTENSIONS = {
 }
 
 # HuggingFace API endpoint
-HF_API_BASE_URL = "https://api-inference.huggingface.co/models"
+HF_API_BASE_URL = "https://router.huggingface.co/models"
 
 # Varsayılan ayarlar
 DEFAULT_SETTINGS = {
