@@ -25,6 +25,7 @@ class HuggingFaceAPI:
     
     def _make_request(self, model: str, payload: Dict[str, Any], is_image: bool = False) -> Optional[Dict[str, Any]]:
         """API isteği yap"""
+        # Router API için URL formatı: https://router.huggingface.co/models/{model}
         url = f"{self.base_url}/{model}"
         
         if is_image:
