@@ -7,6 +7,12 @@ import base64
 from typing import Optional, Dict, Any, List
 from pathlib import Path
 
+try:
+    from huggingface_hub import InferenceClient
+    HF_HUB_AVAILABLE = True
+except ImportError:
+    HF_HUB_AVAILABLE = False
+
 from ..utils.constants import HF_API_BASE_URL
 
 
