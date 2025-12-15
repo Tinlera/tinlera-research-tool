@@ -76,7 +76,7 @@ Tinlera Research Tool, araştırmacılar, öğrenciler ve profesyoneller için t
 ### Adım 1: Repo'yu Klonlayın
 
 ```bash
-git clone https://github.com/kullanici-adi/tinlera-research-tool.git
+git clone https://github.com/Tinlera/tinlera-research-tool.git
 cd tinlera-research-tool
 ```
 
